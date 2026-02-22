@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+
+ETHUB_HOME="${HOME}/.ethub"
+ROOTFS="${ETHUB_HOME}/rootfs"
+
+mkdir -p "$ETHUB_HOME"
+
+case "$1" in
+
+  init)
+    bash scripts/bootstrap.sh
+    ;;
+
+  run)
+    echo "[ETHUB] Launching container..."
+    proot --rootfs="$ROOTFS"       --bind=/dev --bind=/proc --bind=/sys       --cwd=/root /bin/bash --login
+    ;;
+
+  build)
+    cd "$ROOTFS" || exit
+    git checkout -b "$2"
+    echo "[ETHUB] Branch created: $2"
+    ;;
+
+  commit)
+    cd "$ROOTFS" || exit
+    git add .
+    git commit -m "$2"
+    echo "[ETHUB] Snapshot committed."
+    ;;
+
+  reset)
+    cd "$ROOTFS" || exit
+    git checkout "$2"
+    git reset --hard
+    echo "[ETHUB] Reset complete."
+    ;;
+
+  branches)
+    cd "$ROOTFS" || exit
+    git branch
+    ;;
+
+  images)
+    cd "$ROOTFS" || exit
+    git log --oneline --graph --all
+    ;;
+
+  export)
+    tar -czf ethub-image.tar.gz -C "$ROOTFS" .
+    echo "[ETHUB] Image exported as ethub-image.tar.gz"
+    ;;
+
+  import)
+    mkdir -p "$ROOTFS"
+    tar -xzf "$2" -C "$ROOTFS"
+    echo "[ETHUB] Image imported."
+    ;;
+
+  doctor)
+    bash scripts/dependency-check.sh
+    ;;
+
+  *)
+    echo "ETHUB Production CLI"
+    echo "Commands:"
+    echo "  ethub init"
+    echo "  ethub run"
+    echo "  ethub build <branch>"
+    echo "  ethub commit <message>"
+    echo "  ethub reset <branch>"
+    echo "  ethub branches"
+    echo "  ethub images"
+    echo "  ethub export"
+    echo "  ethub import <file>"
+    echo "  ethub doctor"
+    ;;
+
+esac

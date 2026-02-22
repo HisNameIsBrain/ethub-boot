@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+ETHUB_HOME="~/ethub-boot/.ethub"
+ROOTFS="${ETHUB_HOME}/rootfs"
+
+mkdir -p "$ETHUB_HOME"
+cd "$ETHUB_HOME" || exit
+
+if [ -d "$ROOTFS" ]; then
+  echo "[ETHUB] Rootfs already exists."
+  exit 0
+fi
+
+echo "[ETHUB] Downloading minimal Debian rootfs..."
+curl -LO https://deb.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/netboot.tar.gz
+
+mkdir rootfs
+tar -xzf netboot.tar.gz -C rootfs
+
+cd rootfs || exit
+git init
+git commit --allow-empty -m "Base snapshot"
+
+echo "[ETHUB] Installing base development stack..."
+proot --rootfs="$ROOTFS" /bin/bash -c "
+apt update &&
+apt install -y git curl nano vim build-essential python3 python3-pip golang rustc cargo rsync zsh fish &&
+curl -fsSL https://deb.nodesource.com/setup_current.x | bash - &&
+apt install -y nodejs
+"
+
+echo "[ETHUB] Production environment ready."
